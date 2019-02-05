@@ -320,25 +320,38 @@ var Aff = function () {
 
           case ASYNC:
             status = PENDING;
-            step   = runAsync(util.left, step._1, function (result) {
-              return function () {
-                if (runTick !== localRunTick) {
-                  return;
-                }
-                runTick++;
-                Scheduler.enqueue(function () {
-                  // It's possible to interrupt the fiber between enqueuing and
-                  // resuming, so we need to check that the runTick is still
-                  // valid.
-                  if (runTick !== localRunTick + 1) {
+            // Closure introduces a scope for isSync.
+            (function () {
+              var isSync = true;
+              step = runAsync(util.left, step._1, function (result) {
+                return function () {
+                  // If the callback was called synchronously then continue
+                  // with evaluating the asynchronous step as though it was a
+                  // synchronous one.
+                  if (isSync) {
+                    status = STEP_RESULT;
+                    step = result;
                     return;
                   }
-                  status = STEP_RESULT;
-                  step   = result;
-                  run(runTick);
-                });
-              };
-            });
+                  if (runTick !== localRunTick) {
+                    return;
+                  }
+                  runTick++;
+                  Scheduler.enqueue(function () {
+                    // It's possible to interrupt the fiber between enqueuing
+                    // and resuming, so we need to check that the runTick is
+                    // still valid.
+                    if (runTick !== localRunTick + 1) {
+                      return;
+                    }
+                    status = STEP_RESULT;
+                    step = result;
+                    run(runTick);
+                  });
+                };
+              });
+              isSync = false;
+            })();
             return;
 
           case THROW:
