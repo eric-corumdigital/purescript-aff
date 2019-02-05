@@ -323,6 +323,7 @@ var Aff = function () {
             // Closure introduces a scope for isSync.
             (function () {
               var isSync = true;
+              var tmpStep;
               step = runAsync(util.left, step._1, function (result) {
                 return function () {
                   // If the callback was called synchronously then continue
@@ -330,7 +331,7 @@ var Aff = function () {
                   // synchronous one.
                   if (isSync) {
                     status = STEP_RESULT;
-                    step = result;
+                    tmpStep = result;
                     return;
                   }
                   if (runTick !== localRunTick) {
@@ -350,6 +351,7 @@ var Aff = function () {
                   });
                 };
               });
+              if (tmpStep) step = tmpStep;
               isSync = false;
             })();
             return;
