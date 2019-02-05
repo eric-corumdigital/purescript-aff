@@ -320,8 +320,8 @@ var Aff = function () {
 
           case ASYNC:
             status = PENDING;
-            // Closure introduces a scope for isSync.
-            (function () {
+            // Closure introduces a variable scope.
+            var retFromASYNC = (function () {
               var isSync = true;
               var tmpStep;
               step = runAsync(util.left, step._1, function (result) {
@@ -353,8 +353,10 @@ var Aff = function () {
               });
               if (tmpStep) step = tmpStep;
               isSync = false;
+              return !tmpStep;
             })();
-            return;
+            if (retFromASYNC) return;
+            break;
 
           case THROW:
             status = RETURN;
