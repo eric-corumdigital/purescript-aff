@@ -345,7 +345,11 @@ var Aff = function () {
                   if (skipRun) {
                     skipRun = false;
                   } else {
-                    run(runTick);
+                    // This queues the next tick for the next browser step,
+                    // which adds a considerable delay. However, it prevents a
+                    // memory leak on V8 related to the stacktrace captured on
+                    // the instantiation of an Error object.
+                    setTimeout(function () { run(runTick); }, 0);
                   }
                 };
               });
